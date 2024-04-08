@@ -1,0 +1,48 @@
+import csv
+import time
+
+# Function to read all log data from the file
+def read_all_logs(file_path):
+    with open(file_path, 'r', encoding='utf-8') as log_file:
+        log_data = log_file.read()
+    return log_data.strip().split('\n')
+
+# Function to read new log entries from the file
+def read_new_logs(file_path, old_logs):
+    all_logs = read_all_logs(file_path)
+    new_logs = [log for log in all_logs if log not in old_logs]
+    return new_logs
+
+# Function to update the CSV file with new log entries
+def update_csv(log_lines, csv_file_path):
+    with open(csv_file_path, 'a', newline='', encoding='utf-8-sig') as csvfile:
+        fieldnames = ['latitude', 'longitude', 'destinationhost', 'username', 'sourcehost', 'state', 'country', 'label', 'timestamp']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        for line in log_lines:
+            if 'latitude' in line:
+                continue  # Skip log entries that contain the 'latitude' field
+
+            data_pairs = line.split(',')
+            log_entry = {}
+            for pair in data_pairs:
+                key, value = pair.split(':', 1)
+                log_entry[key.strip()] = value.strip()
+
+            writer.writerow(log_entry)
+
+# Paths to log file and CSV file
+log_file_path = r'C:\ProgramData\failed_rdp.log'
+csv_file_path = r'C:\Users\c00291390\Desktop\normalized_logs.csv'  # Updated CSV file path
+
+# Initial read of all logs
+all_logs = read_all_logs(log_file_path)
+update_csv(all_logs, csv_file_path)
+
+# Continuously monitor and update
+while True:
+    time.sleep(5)  # Adjust the interval as needed (check every 5 seconds in this case)
+    new_logs = read_new_logs(log_file_path, all_logs)
+    if new_logs:
+        update_csv(new_logs, csv_file_path)
+        all_logs.extend(new_logs)
